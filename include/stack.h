@@ -55,6 +55,9 @@ public:
 
 	~Stack() {
 		delete[] data;
+		data = nullptr;
+		capacity = 0;
+		topIndex = 0;
 	}
 
 	void push(const T& value) {

@@ -308,3 +308,33 @@ TEST(ArithmeticTest, LessThanFalse) {
     ArithmeticCalculator calc;
     EXPECT_DOUBLE_EQ(calc.calculate("5 < 3"), 0.0);
 }
+
+TEST(ArithmeticTest, CalculateWithInvalidExpressionThrowsWithPosition) {
+    ArithmeticCalculator calc;
+
+    try {
+        calc.calculate("(2 + 3");
+        FAIL() << "Expected ParseException";
+    }
+    catch (const ParseException& e) {
+        EXPECT_NE(std::string(e.what()).find("position"), std::string::npos);
+    }
+
+    try {
+        calc.calculate("2 + * 3");
+        FAIL() << "Expected ParseException";
+    }
+    catch (const ParseException& e) {
+        EXPECT_NE(std::string(e.what()).find("position"), std::string::npos);
+    }
+}
+
+TEST(ArithmeticTest, SimpleExpressionNoSpaces) {
+    ArithmeticCalculator calc;
+    EXPECT_DOUBLE_EQ(calc.calculate("1+1"), 2.0);
+}
+
+TEST(ArithmeticTest, SimpleExpressionWithSpaces) {
+    ArithmeticCalculator calc;
+    EXPECT_DOUBLE_EQ(calc.calculate("1 + 1"), 2.0);
+}

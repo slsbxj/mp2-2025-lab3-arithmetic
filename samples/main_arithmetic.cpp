@@ -27,6 +27,9 @@ void calculateExpression(ArithmeticCalculator& calc) {
         double result = calc.calculate(expression);
         cout << "Result: " << result << endl;
     }
+    catch (const ParseException& e) {
+        cout << "Error at position " << e.getPosition() << ": " << e.what() << endl;
+    }
     catch (const exception& e) {
         cout << "Error: " << e.what() << endl;
     }
@@ -72,8 +75,9 @@ void showRPN(ArithmeticCalculator& calc) {
     getline(cin, expression);
 
     try {
+        size_t errorPos = 0;
         if (!calc.isValidExpression(expression)) {
-            cout << "Invalid expression!" << endl;
+            cout << "Invalid expression at position" << errorPos << "!" << endl;
             return;
         }
 

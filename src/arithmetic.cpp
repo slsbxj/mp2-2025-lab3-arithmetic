@@ -20,26 +20,42 @@ ArithmeticCalculator::~ArithmeticCalculator() {
 	variables.clear();
 }
 
-bool ArithmeticCalculator::isValidExpression(const std::string& expression) const {
-	if (expression.empty()) return false;
+bool ArithmeticCalculator::isValidExpression(const std::string& expression, size_t* errorPos) const {
+	if (errorPos) *errorPos = 0;
+	return checkExpression(expression, errorPos);
+}
+
+bool ArithmeticCalculator::checkExpression(const std::string& expression, size_t* errorPos) const {
+	if (expression.empty()) {
+		if (errorPos) *errorPos = 0;
+		return false;
+	}
 
 	int balance = 0;
 	bool lastWasOperator = true;
 	bool lastWasOperand = false;
+	size_t currentPos = 0;
 
 	for (size_t i = 0; i < expression.length(); ++i) {
 		char c = expression[i];
 
-		if (isspace(c)) continue;
+		if (isspace(c)) {
+			currentPos++;
+			continue;
+		}
 		
 		if (i + 1 < expression.length()) {
 			string twoCharOp = expression.substr(i, 2);
 			if (twoCharOp == "==" || twoCharOp == "!=" ||
 				twoCharOp == "<=" || twoCharOp == ">=") {
-				if (lastWasOperator) return false;
+				if (lastWasOperator) {
+					if (errorPos) *errorPos = currentPos;
+					return false;
+				}
 				lastWasOperator = true;
 				lastWasOperand = false;
 				i++;
+				currentPos++;
 				continue;
 			}
 		}
@@ -50,13 +66,19 @@ bool ArithmeticCalculator::isValidExpression(const std::string& expression) cons
 			lastWasOperand = false;
 		}
 		else if (c == ')') {
-			if (balance <= 0) return false;
+			if (balance <= 0) {
+				if (errorPos) *errorPos = currentPos;
+				return false;
+			}
 			balance--;
 			lastWasOperator = false;
 			lastWasOperand = true;
 		}
 		else if (isOperator(string(1, c))) {
-			if (lastWasOperator && c != '-' && c != '+') return false;
+			if (lastWasOperator && c != '-' && c != '+') {
+				if (errorPos) *errorPos = currentPos;
+				return false;
+			}
 			lastWasOperator = true;
 			lastWasOperand = false;
 		}
@@ -69,8 +91,12 @@ bool ArithmeticCalculator::isValidExpression(const std::string& expression) cons
 				while (i + 1 < expression.length() &&
 					(isdigit(expression[i + 1]) || expression[i + 1] == '.')) {
 					i++;
+					currentPos++;
 					if (expression[i] == '.') {
-						if (hasDot) return false;
+						if (hasDot) {
+							if (errorPos) *errorPos = currentPos;
+							return false;
+						}
 						hasDot = true;
 					}
 				}
@@ -79,13 +105,29 @@ bool ArithmeticCalculator::isValidExpression(const std::string& expression) cons
 				while (i + 1 < expression.length() &&
 					(isalnum(expression[i + 1]) || expression[i + 1] == '_')) {
 					i++;
+					currentPos++;
 				}
 			}
 		}
-		else
+		else {
+			if (errorPos) *errorPos = currentPos;
 			return false;
+		}
+
+		currentPos++;
 	}
-	return balance == 0 && !lastWasOperator;
+
+	if (balance != 0) {
+		if (errorPos) *errorPos = expression.length() - 1;
+		return false;
+	}
+
+	if (lastWasOperator) {
+		if (errorPos) *errorPos = expression.length() - 1;
+		return false;
+	}
+
+	return true;
 }
 
 std::vector<std::string>ArithmeticCalculator::tokenize(const string& expression) const {
@@ -181,8 +223,9 @@ vector<string> ArithmeticCalculator::toRPN(const std::string& expression) const 
 }
 
 double ArithmeticCalculator::calculate(const string& expression) {
-	if (!isValidExpression(expression))
-		throw std::invalid_argument("Invalid expression");
+	size_t errorPos = 0;
+	if (!checkExpression(expression, &errorPos))
+		throw ParseException("Invalid expression", errorPos);
 	vector<string> rpn = toRPN(expression);
 	return calculateRPN(rpn);
 }

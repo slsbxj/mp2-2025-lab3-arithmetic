@@ -6,13 +6,25 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <stdexcept>
+
+class ParseException : public std::invalid_argument {
+public:
+	ParseException(const std::string& message, size_t position)
+		: std::invalid_argument(message + "at position " + std::to_string(position)), 
+		position(position) {}
+	size_t getPosition() const { return position; }
+
+private:
+	size_t position;
+};
 
 class ArithmeticCalculator {
 public:
 	ArithmeticCalculator();
 	~ArithmeticCalculator();
 
-	bool isValidExpression(const std::string& expression) const;
+	bool isValidExpression(const std::string& expression, size_t* errorPos = nullptr) const;
 	std::vector<std::string> toRPN(const std::string& expression) const;
 	double calculate(const std::string& expression);
 	double calculateRPN(const std::vector<std::string>& rpn);
@@ -32,6 +44,8 @@ private:
 
 	double applyOperator(double a, double b, const std::string& op) const;
 	double applyFunction(const std::string& func, double arg) const;
+
+	bool checkExpression(const std::string& expression, size_t* errorPos) const;
 };
 
 #endif
